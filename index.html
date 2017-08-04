@@ -1,0 +1,103 @@
+<html>
+  <head>
+    <title>GUI</title>
+    <link rel="icon" href="img/Logo.svg" sizes="any" type="image/svg+xml">
+    <link rel="icon" href="img/Logo.png">
+    <link href="https://fonts.googleapis.com/css?family=Poiret+One|Ubuntu|Quicksand" rel="stylesheet">
+    <link href="css/style.css" rel="stylesheet">
+  </head>
+  <body
+    id="Evotacle"
+    ng-app="evotacleApp"
+    ng-controller="GameController"
+    class="ARC-vertical-flex"
+  >
+    <svg width="0" height="0">
+      <defs>
+        <linearGradient id="gradient" x1="0" y1="100%" x2 ="0" y2="100%">
+          <stop stop-color="black" offset="0"/>
+          <stop stop-color="white" offset="1"/>
+        </linearGradient>
+
+        <mask id="masking" maskUnits="objectBoundingBox" maskContentUnits="objectBoundingBox">
+          <rect x="0" y="" width="350" height="350" fill="url(#gradient)" />
+        </mask>
+      </defs>
+    </svg>
+
+    <div
+      id="Main"
+      tabindex="0"
+      ng-controller="ViewController"
+      class="border-4vh"
+    >
+      <section
+        id="Board"
+        class="view active ARC-horizontal-flex border-2vh"
+      >
+        <!--
+          # Top Left Information Panel
+          Speed Controls and Progressbar
+        -->
+        <section
+          id="TimePanel"
+          class="ARC-vertical-flex ARC-horizontal-spacep-h1"
+        >
+          <div class="ico-container" ng-click-handle="playToggle" ng-reciever="playStateReciever" status="paused">
+            <svg class="playToggle-pause" xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 499.99998 499.99996">
+              <path fill="#1e362b" d="M390 250l-127.5 73.6L135 397.2V102.8l127.5 73.6z"/>
+            </svg>
+            <svg class="playToggle-play" xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 499.99998 499.99996">
+              <path d="M160 110h70v280h-70zm112 0h70v280h-70z" fill="#1e362b"/>
+            </svg>
+          </div>
+          <div class="ico-container" ng-click-handle="speed">
+            <svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 499.99998 499.99996">
+              <g fill="#1e362b">
+                <path d="M320.4 248l-110 63.6L100 375.2V120.8l110.3 63.6z"/>
+                <path d="M425.8 250l-104 54.6-104 54.6V140.8l104 54.6z"/>
+              </g>
+            </svg>
+          </div>
+          <div class="bar progressbar">
+            <div ng-progress-event="Game.Time"></div>
+          </div>
+          <div class="button">
+            Evolve
+          </button>
+        </section>
+        <section>
+          <!-- Ressources -->
+          <section
+            id="ResourceOthers"
+            class="ARC-vertical-flex"
+          >
+            <div
+              ng-repeat="RessRef in playerRessources"
+              class="ARC-vertical-flex"
+              style="color:#c9e1d6; margin:0 0.5vh;"
+            >
+              <img ng-src="{{RessRef.Ressource.icon}}" style="width:3vh;height:3vh">
+              <span>{{RessRef.Ressource.name}}: {{RessRef.value}}</span>
+            </div>
+          </section>
+        </section>
+        <svg id="Map">
+          <g transform="translate(0 453) scale(0.4) rotate(-90)">
+          </g>
+        </svg>
+      </section>
+      <section id="Stages" class="view border-2vh">
+
+      </section>
+      <section id="StageEditor" class="view border-2vh">
+
+      </section>
+    </div>
+
+    <script src="js/physicsjs-full.min.js"></script>
+    <script src="js/snap.svg-min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script>
+    <script src="js/angularApp.js"></script>
+  </body>
+</html>
