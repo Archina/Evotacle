@@ -351,7 +351,7 @@ evotacleApp.controller("GameController",[
       },function(){
         this.animate({transform:"s1"},100)
       }).singleClick(function(){
-        this.remove()
+        this.parent().remove()
       })
     })
 
@@ -435,6 +435,86 @@ evotacleApp.directive("ngReciever",['$rootScope',function($rootScope){
     }
   }
 }])
+
+
+evotacleApp.directive("ngDynamicStyles",['$rootScope',function($rootScope){
+
+  // ngDynamicStyles="height,Y"
+  // data-dy-height="pHeight-4vh"
+  // data-dy-Y="4vh"
+  // data-dy-height="{w|weight}"
+  // data-dy-weight="12"
+
+  var buildVariables = function(element){
+    var parent = element.parentElement
+    var variables = new Map()
+
+    variables.set( "vh" , "*"+( Math.max( document.documentElement.clientHeight, window.innerHeight || 0) / 100 ) )
+    variables.set( "vw" , "*"+( Math.max( document.documentElement.clientWidth,  window.innerWidth  || 0) / 100 ) )
+    variables.set( /\{p\d+\|.+\}/, function(string){
+      var depth = parseInt(string.substring(2,string.indexOf("|")))
+      var evaluate = string.substring(string.indexOf("|")+1,string.length-1)
+      return eval( "element."+( new Array(depth).fill("parentElement").join(".") )+"."+ evaluate )
+    })
+    variables.set( /\{w\|(.+)\}/, function(string){
+      var target = string.substring(3,string.length-1)
+      var targetString = "data-dy-"+target
+      var elements = element.parentElement.children
+        .filter((e)=>(e.hasAttribute(targetString)))
+      var total = elements.map((e)=>parseInt(e.getAttribute(targetString))).reduce((a,b)=>a+b,0)
+      return parseFloat( element.getAttribute(targetString) )/total
+    })
+
+
+    return variables
+  }
+
+  var calcDynamicStyle = function(ele,stylingString){
+    var variables = buildVariables(ele)
+    var tmpString = stylingString
+    variables.forEach(function(v,k,m){
+      tmpString = tmpString.replace(k,v)
+    })
+    return eval(tmpString)
+  }
+
+
+  var applyStyles = function(element){
+
+    var dynamicStyles = element.getAttribute("ng-dynamic-styles").split(',')
+    for(var style of dynamicStyles){
+      var attributeString = "data-dy-"+style.toLowerCase()
+      if(element.hasAttribute(attributeString)){
+        element.setAttribute(style.toLowerCase(),eval(calcDynamicStyle(element,element.getAttribute(attributeString)).toFixed(2)))
+      }
+    }
+  }
+
+  var handleTimeout = null
+  window.addEventListener("resize",function(){
+    if(handleTimeout)
+      clearTimeout(handleTimeout)
+    handleTimeout = setTimeout(function () {
+      $rootScope.$emit("DyStyles.Update")
+    }, 70)
+  })
+
+  return {
+    scope:false,
+    link:function( $scope,element, attrs,controller,transcludeFn){
+      var element = element[0]
+      if(attrs.hasOwnProperty("ngDynamicStyles") && typeof attrs.ngDynamicStyles === "string"){
+        applyStyles(element)
+        $rootScope.$on("DyStyles.Update",function(e){
+          applyStyles(element)
+        })
+      }else{
+        console.log("Dynamic Style is of not supported format.")
+      }
+    }
+  }
+}])
+
 
 // Controller containing the most basic game states: Running and Paused
 //  that also allows to manipulate the simulation speed..
