@@ -1,4 +1,4 @@
-var evotacleApp = angular.module('evotacleApp', [])
+var Evotacle = angular.module('Evotacle', [])
 
 // Factory that encapusles a Ressource class.
 /*
@@ -6,7 +6,7 @@ var evotacleApp = angular.module('evotacleApp', [])
  * manage modifications in quantity in respect to
  * boundaries.
  */
-evotacleApp.factory("Ressources",[
+Evotacle.factory("Ressources",[
   "$rootScope",
   function($rootScope){
     var Ressources = []
@@ -104,7 +104,7 @@ evotacleApp.factory("Ressources",[
  * Used to register new Players to the Game, wiring them
  * to the ressource pools avalible in the game..
  */
-evotacleApp.factory("Players",[
+Evotacle.factory("Players",[
 	"$rootScope",
 	"Ressources",
 	function($rootScope,Ressources){
@@ -200,7 +200,7 @@ evotacleApp.factory("Players",[
 ])
 
 //Sets up the base Game
-evotacleApp.run([
+Evotacle.run([
   "$rootScope",
   "Ressources",
   "Players",
@@ -227,7 +227,7 @@ evotacleApp.run([
 }])
 
 // Factory bridging from angular to Snap.svg allowing to render SVGs
-evotacleApp.factory("MapView",["$rootScope",function($rootScope){
+Evotacle.factory("MapView",["$rootScope",function($rootScope){
   var Map = Snap("#Map")
   var Mouse = {
     x:0,
@@ -317,7 +317,7 @@ evotacleApp.factory("MapView",["$rootScope",function($rootScope){
 /*
  * Manipulates the Game Data, consumes Game.Events, and contains the main game loop.
  */
-evotacleApp.controller("GameController",[
+Evotacle.controller("GameController",[
 	"$scope",
 	"$rootScope",
 	"$interval",
@@ -380,7 +380,7 @@ evotacleApp.controller("GameController",[
 ])
 
 // Directive that controls the main loop of the game via Pause/Unpause Events.
-evotacleApp.directive("ngProgressEvent",['$rootScope',function($rootScope){
+Evotacle.directive("ngProgressEvent",['$rootScope',function($rootScope){
   return {
     scope:{},
     link:function ($scope, element, attrs, controller, transcludeFn) {
@@ -403,7 +403,7 @@ evotacleApp.directive("ngProgressEvent",['$rootScope',function($rootScope){
 }])
 
 // Directive that binds a function call as a handler when an HTML element is clicked.
-evotacleApp.directive("ngClickHandle",['$rootScope',function($rootScope){
+Evotacle.directive("ngClickHandle",['$rootScope',function($rootScope){
   return {
     scope:false,
     link:function ($scope, element, attrs, controller, transcludeFn) {
@@ -422,7 +422,7 @@ evotacleApp.directive("ngClickHandle",['$rootScope',function($rootScope){
 
 // TODO Unfinsihed
 // Stump for a directive that wires HTML element to Game-Events allowing them to change attributes accordingsly.
-evotacleApp.directive("ngReciever",['$rootScope',function($rootScope){
+Evotacle.directive("ngReciever",['$rootScope',function($rootScope){
   return {
     scope:false,
     link:function ($scope, element, attrs, controller, transcludeFn) {
@@ -437,7 +437,7 @@ evotacleApp.directive("ngReciever",['$rootScope',function($rootScope){
 }])
 
 
-evotacleApp.directive("ngDynamicStyles",['$rootScope',function($rootScope){
+Evotacle.directive("ngDynamicStyles",['$rootScope',function($rootScope){
 
   // ngDynamicStyles="height,Y"
   // data-dy-height="pHeight-4vh"
@@ -517,8 +517,8 @@ evotacleApp.directive("ngDynamicStyles",['$rootScope',function($rootScope){
 
 
 // Controller containing the most basic game states: Running and Paused
-//  that also allows to manipulate the simulation speed..
-evotacleApp.controller("ViewController",["$scope","$rootScope",function($scope,$rootScope){
+// that also allows to manipulate the simulation speed..
+Evotacle.controller("ViewController",["$scope","$rootScope",function($scope,$rootScope){
   $scope.index = 0
   $scope.playToggle = function(element){
     if(element.getAttribute("status") == "paused"){
