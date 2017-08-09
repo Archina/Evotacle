@@ -298,6 +298,7 @@ Evotacle.run([
 		BasicRessources.map(function(BasicRessource){
 			BasicRessource.setLowOnly(0)
 		})
+    new Players.Class()
 }])
 
 // Factory bridging from angular to Snap.svg allowing to render SVGs
@@ -415,7 +416,7 @@ Evotacle.controller("GameController",[
   "Resolveable",
 	function($scope, $rootScope, $interval, Ressources, Players, MapView, Resolveable){
     $scope.Ressources = Ressources.Instances
-    $scope.Player = new Players.Class()
+    $scope.Player = Players.Instances[0]
 
     $scope.Player.setRessource("Nutrients",20)
     $scope.Player.setRessource("Tentacles",1)
@@ -672,12 +673,12 @@ Evotacle.directive("ngDynamicStyles",['$rootScope',function($rootScope){
 
 
   var applyStyles = function(element){
-
     var dynamicStyles = element.getAttribute("ng-dynamic-styles").split(',')
     for(var style of dynamicStyles){
       var attributeString = "data-dy-"+style.toLowerCase()
       if(element.hasAttribute(attributeString)){
-        element.setAttribute(style.toLowerCase(),eval(calcDynamicStyle(element,element.getAttribute(attributeString)).toFixed(2)))
+        var tmpEval = eval(calcDynamicStyle(element,element.getAttribute(attributeString)).toFixed(2))
+        element.setAttribute(style.toLowerCase(),tmpEval)
       }
     }
   }
@@ -696,7 +697,10 @@ Evotacle.directive("ngDynamicStyles",['$rootScope',function($rootScope){
     link:function( $scope,element, attrs,controller,transcludeFn){
       var element = element[0]
       if(attrs.hasOwnProperty("ngDynamicStyles") && typeof attrs.ngDynamicStyles === "string"){
-        applyStyles(element)
+        //TODO Dirty Hack...
+        setTimeout(function(){
+          applyStyles(element)
+        },70)
         $rootScope.$on("DyStyles.Update",function(e){
           applyStyles(element)
         })
@@ -711,7 +715,13 @@ Evotacle.directive("ngDynamicStyles",['$rootScope',function($rootScope){
 // Controller containing the most basic game states: Running and Paused
 // that also allows to manipulate the simulation speed..
 Evotacle.controller("ViewController",["$scope","$rootScope",function($scope,$rootScope){
-  $scope.index = 0
+  this.index = 0
+
+  this.switchScene = function(index){
+    this.index = index
+    $rootScope.$emit("Game.Pause")
+  }
+
   $scope.playToggle = function(element){
     if(element.getAttribute("status") == "paused"){
       $rootScope.$emit("Game.Resume")
@@ -736,3 +746,74 @@ Evotacle.controller("ViewController",["$scope","$rootScope",function($scope,$roo
     $rootScope.$emit("Game.Resume")
   }
 }])
+
+Evotacle.factory("StageFactory",["$rootScope",function($rootScope){
+
+}])
+
+Evotacle.controller("StagesController",["$scope","$rootScope","Players",
+  function($scope,$rootScope,Players){
+
+    var Simulation = {
+      paused:false,
+      timeStep: 1000/60, //Equal to 60 FPS
+      timeStampLast:performance.now(),
+      timeBuffer: 0
+    }
+
+    this.points = [
+      new Victor(Math.random()*20-10,Math.random()*20-10),
+      new Victor(Math.random()*20-10,Math.random()*20-10),
+      new Victor(Math.random()*20-10,Math.random()*20-10),
+      new Victor(Math.random()*20-10,Math.random()*20-10),
+      new Victor(Math.random()*20-10,Math.random()*20-10)
+    ]
+    $scope.points = this.points
+
+    $scope.step = function(timeStamp){
+      var tmp_Now = performance.now()
+
+      // Initiate new time window
+      Simulation.timeBuffer += tmp_Now - Simulation.timeStampLast
+      Simulation.timeStampLast = tmp_Now
+      // Simulate physics till timeBuffer is consumed
+      var tmpCounter = 0
+      while(Simulation.timeBuffer >= Simulation.timeStep){
+        $scope.updatePhysics(Simulation.timeStep)
+        Simulation.timeBuffer -= Simulation.timeStep
+        tmpCounter += 1
+      }
+
+      $scope.updateVisuals(tmpCounter*Simulation.timeStep)
+
+      if(!Simulation.paused){
+        window.requestAnimationFrame($scope.step)
+      }
+    }
+
+    $scope.updatePhysics = function(time){
+
+    }
+
+    $scope.updateVisuals = function(time){
+      var SnapSVG = Snap("#Stages svg")
+      SnapSVG.clear()
+      for(var point of $scope.points){
+        SnapSVG.circle().attr({
+          r:5,
+          cx:point.x,
+          cy:point.y,
+          fill:"green"
+        })
+      }
+    }
+
+    $scope.run = function(){
+      Simulation.timeStampLast = performance.now()
+      Simulation.paused = false
+      window.requestAnimationFrame($scope.step)
+    }
+
+    $scope.run()
+  }
+])

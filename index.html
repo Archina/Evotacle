@@ -28,12 +28,13 @@
     <div
       id="Main"
       tabindex="0"
-      ng-controller="ViewController"
+      ng-controller="ViewController as VC"
       class="border-4vh"
     >
       <section
         id="Board"
-        class="view active ARC-horizontal-flex border-2vh"
+        class="view ARC-horizontal-flex border-2vh"
+        ng-class="{active: VC.index == 0}"
       >
         <!--
           # Top Left Information Panel
@@ -62,7 +63,7 @@
           <div class="bar progressbar">
             <div ng-progress-event="Game.Time"></div>
           </div>
-          <div class="button" style="height: 2vh; font-size: 2vh;">
+          <div class="button" style="height: 2vh; font-size: 2vh;" ng-click="VC.switchScene(1)">
             Evolve
           </button>
         </section>
@@ -100,16 +101,19 @@
           </g>
         </svg>
       </section>
-      <section id="Stages" class="view border-2vh">
+      <section id="Stages" class="view border-2vh" ng-class="{active: VC.index == 1}" ng-controller="StagesController as SC">
+        <svg viewbox="-50 -50 100 100" style="max-height: 100%;">
 
+        </svg>
       </section>
-      <section id="StageEditor" class="view border-2vh">
+      <section id="StageEditor" class="view border-2vh" ng-class="{active: VC.index == 2}">
 
       </section>
     </div>
 
     <script src="js/physicsjs-full.min.js"></script>
     <script src="js/snap.svg-min.js"></script>
+    <script src="https://cdn.rawgit.com/maxkueng/victor/master/build/victor.min.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.6.4/angular.min.js"></script>
     <script src="js/EvotacleApp.js"></script>
   </body>
