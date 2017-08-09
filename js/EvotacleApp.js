@@ -178,14 +178,22 @@ Evotacle.factory("Players",[
 					}
 				}
 			}
+
+      static getPlayerByName(string){
+        var tmpPlayer = Players.filter((tPlayer)=>tPlayer.name===string)
+        if(tmpPlayer.length > 0){
+          return tmpPlayer[0]
+        }
+        return null
+      }
     }
 
     //This is a little helper class connecting players to the ressource pool.
     class RessRef{
-      	constructor(Ress,v){
-	        this.Ressource = Ress
-	        this.value = 0
-	        this.apply(v)
+    	constructor(Ress,v){
+        this.Ressource = Ress
+        this.value = 0
+        this.apply(v)
 	    }
 			apply(value){
     		this.value = this.Ressource.apply(this.value,value)
@@ -198,6 +206,73 @@ Evotacle.factory("Players",[
     }
 	}
 ])
+
+// This factories purpose is to create chunk objects that can be resolved to modifier attributes of a player.
+Evotacle.factory("Resolveable",["$rootScope","Players","Ressources",
+  function($rootScope,Players,Ressources){
+    var factory = {}
+
+    class Resolveable{
+      resolve(){}
+    }
+
+    factory.checkResolveable = function(object){
+      return object instanceof Resolveable
+    }
+
+    factory.PlayerModifier = class PlayerModifier extends Resolveable{
+
+      constructor(pString,rString){
+        super()
+        this.setPlayer(pString)
+        this.setResource(rString)
+        this.setAmount(0)
+      }
+
+      setPlayer(string){
+        this.targetPlayer = Players.Class.getPlayerByName(string)
+      }
+
+      setResource(string){
+        this.targetResource = Ressources.Class.getRessource(string)
+      }
+
+      setAmount(float){
+        this.amount = float
+      }
+
+      resolve(){
+        this.targetPlayer.modRessource(this.targetResource.name,this.amount)
+        $rootScope.$emit("Player.Updated")
+      }
+
+    }
+
+    return factory
+  }
+])
+
+// Evotacle.controller("PlayerController",["$scope","$rootScope","Players",
+//   function($scope,$rootScope,Players){
+//
+//     $scope.getPlayer(string){
+//       var tmpPlayers = Players.filter((a)=>a.name===string)
+//       if(tmpPlayers.length > 0){
+//         return tmpPlayers[0]
+//       }
+//       return null
+//     }
+//
+//     $rootScope.$on("Player.Resource",function(e,data){
+//       var player = $scope.getPlayer(data.player)
+//       var resource = data.resource
+//       var modFunc = data.mod
+//       var tmpResource = player.getRessource(resource)
+//       player.setRessource(resource,modFunc(player,tmpResource))
+//     })
+//
+//   }
+// ])
 
 //Sets up the base Game
 Evotacle.run([
@@ -223,11 +298,10 @@ Evotacle.run([
 		BasicRessources.map(function(BasicRessource){
 			BasicRessource.setLowOnly(0)
 		})
-		new Players.Class()
 }])
 
 // Factory bridging from angular to Snap.svg allowing to render SVGs
-Evotacle.factory("MapView",["$rootScope",function($rootScope){
+Evotacle.factory("MapView",["$rootScope","Resolveable",function($rootScope,Resolveable){
   var Map = Snap("#Map")
   var Mouse = {
     x:0,
@@ -238,13 +312,25 @@ Evotacle.factory("MapView",["$rootScope",function($rootScope){
     Mouse.y = y
     //Inverse Transform
   })
+
   Map.click(function(e,x,y){
     var tPoint = Map.node.createSVGPoint()
+
     tPoint.x = x
     tPoint.y = y
-    tPoint = tPoint.matrixTransform(Map.node.getScreenCTM().inverse())
-    console.log({"Sending Point":tPoint})
-    $rootScope.$emit("Game.Popup",tPoint);
+
+    var data = tPoint.matrixTransform(Map.node.getScreenCTM().inverse())
+
+    var targets = ["sym_egg","sym_amino2","sym_file","sym_nutrient","sym_tacles","sym_dna","sym_flask"]
+    data.res = targets[( parseInt( Math.random()*targets.length-0.0001 ) )]
+
+    data.duration = 3
+
+    data.resolve = new Resolveable.PlayerModifier("Unknown Spec.","Nutrients")
+    data.resolve.setAmount(50)
+
+    console.log({"Sending Point":data})
+    $rootScope.$emit("Game.Popup",data);
   })
 
   function load(img){
@@ -252,10 +338,12 @@ Evotacle.factory("MapView",["$rootScope",function($rootScope){
     if(!def){
     Snap.load("img/"+img+".svg",function(data){
       if(data){
-        var tmpSVG = data.select("*")
+        if(data.node.nodeName != "svg"){
+          data = data.select("svg")
+        }
         var tGroup = Snap("#Map").g()
-        tGroup.add(tmpSVG)
-        tmpSVG = tGroup.select("*")
+        tGroup.add(data)
+        var tmpSVG = tGroup.select("svg")
         tmpSVG.attr({"id":img})
         tmpSVG.toDefs()
         tGroup.remove()
@@ -265,6 +353,7 @@ Evotacle.factory("MapView",["$rootScope",function($rootScope){
   }
 
   function addElement(layer,img,x,y,action,singleUse){
+    var tmpEle = Snap("#Map").g().attr({transform:"t"+x+" "+y}).g()
     if(typeof singleUse === undefined) singleUse = false
     if(typeof action === "function"){
       var tClick = function(e){
@@ -278,13 +367,11 @@ Evotacle.factory("MapView",["$rootScope",function($rootScope){
           action(e,this)
         }
       }
+      tmpEle.click(tClick)
     }
     load(img)
-    return Snap("#Map").g().attr({transform:"t"+x+" "+y}).use("#"+img).hover(function(){
-      this.animate({transform:"s0.09"},100)
-    },function(){
-      this.animate({transform:"s0.07"},100)
-    }).click(tClick)
+    tmpEle.use("#"+img)
+    return tmpEle.parent()
   }
 
 	//For a single Click Only
@@ -309,6 +396,7 @@ Evotacle.factory("MapView",["$rootScope",function($rootScope){
 	})
 
 	return {
+    load:load,
 		addElement:addElement
 	}
 }])
@@ -324,10 +412,10 @@ Evotacle.controller("GameController",[
 	"Ressources",
 	"Players",
 	"MapView",
-	function($scope, $rootScope, $interval, Ressources, Players, MapView){
+  "Resolveable",
+	function($scope, $rootScope, $interval, Ressources, Players, MapView, Resolveable){
     $scope.Ressources = Ressources.Instances
     $scope.Player = new Players.Class()
-		console.log($scope.Player)
 
     $scope.Player.setRessource("Nutrients",20)
     $scope.Player.setRessource("Tentacles",1)
@@ -346,21 +434,61 @@ Evotacle.controller("GameController",[
 
     // Handler that create a little tag on the MapView.
     $rootScope.$on("Game.Popup",function(e,data){
-      MapView.addElement(null,"sym_tag_blank",data.x,data.y).hover(function(){
-        this.animate({transform:"s1.2"},100)
+      var tmpEle = MapView.addElement(null,"sym_tag_blank2",data.x,data.y)
+
+      tmpEle.select("use").attr({
+        x:-25,
+        y:-50
+      })
+
+      if(data.hasOwnProperty("res")){
+        MapView.load(data.res)
+        tmpEle.select("g g").g({
+          transform:"t 0,-32"
+        }).circle({
+          r:15,
+          fill:"#647b70"
+        }).use("#"+data.res).attr({
+          href:"#"+data.res,
+          height:30,
+          width:30,
+          x:-15,
+          y:-15
+        })
+      }
+
+      if(data.hasOwnProperty("duration")){
+        tmpEle.node.setAttribute("data-duration",data.duration)
+        var tmpHandler = function(){
+          var current = parseInt( tmpEle.node.getAttribute("data-duration") )-1
+          if(current == 0){
+            window.document.removeEventListener("Window.Game.Step",this)
+            tmpEle.remove()
+          }else{
+            tmpEle.node.setAttribute("data-duration",current)
+          }
+        }
+        window.document.addEventListener("Window.Game.Step",tmpHandler)
+      }
+
+      tmpEle.hover(function(){
+        this.select("g").animate({transform:"s1.2"},100)
       },function(){
-        this.animate({transform:"s1"},100)
+        this.select("g").animate({transform:"s1"},100)
       }).singleClick(function(){
-        this.parent().remove()
+        this.remove()
+        if(data.hasOwnProperty("resolve") && Resolveable.checkResolveable(data.resolve)){
+          data.resolve.resolve()
+        }
       })
     })
 
-    // Main Game Loop - that updates ressources.
-    $rootScope.$on("Game.Step",function(e){
+    $scope.calculateRessource = function(){
       $scope.Player.modRessource("Nutrients",1)
+      var message = null
       if((Math.random() * 20).toFixed(0) == 0){
         $scope.Player.modRessource("Amino Acids",1)
-        console.log("Essential Amino Acids have been discovered by your tentacles.")
+        message = "Essential Amino Acids have been discovered by your tentacles."
       }
       var consumption = $scope.Player.getRessource("Tentacles") * 5 * Math.random()
       $scope.Player.modRessource(-consumption.toFixed(0))
@@ -372,10 +500,74 @@ Evotacle.controller("GameController",[
         $scope.Player.modRessource("Nutrients",-50)
         $scope.Player.modRessource("Amino Acids",-5)
         $scope.Player.modRessource("Eggs",1)
-        console.log("An egg was spawn by your tentacles.")
+        message = "An egg was spawned by your tentacles."
       }
+      if(message != null){
+        Snap("#Map").select("#EventTicker text").animate({
+          opacity:0
+        },100,function(){
+          this.attr({
+            text:message,
+            opacity:1
+          })
+
+          var transform = this.select("animateTransform")
+
+          //Clear Old Transforms
+          if(transform){
+            transform.remove()
+          }
+
+          var textElement = this
+
+          var offset = (this.node.getBBox().width - this.parent().select("rect").node.getBBox().width)
+          var timeFrame = offset/100
+
+          if(offset > 0){
+            offset += 20
+            var SVGnamespace = "http://www.w3.org/2000/svg"
+            var an = document.createElementNS(SVGnamespace,'animateTransform')
+
+            an.setAttribute("attributeType","XML")
+            an.setAttribute("attributeName","transform")
+            an.setAttribute("type","translate")
+            an.setAttribute("dur",`4s`)
+            an.setAttribute("values",`${-offset/2} 0;${offset/2} 0;${-offset/2} 0`)
+            an.setAttribute("repeatCount","indefinite")
+
+            this.node.appendChild(an)
+          }
+        })
+        Snap("#Map").select("#EventTicker rect").animate({
+          fill:"#d58b23"
+        },100,function(){
+          this.animate({
+            fill:"#483613"
+          },500)
+        })
+      }
+    }
+
+    $scope.generateBubbles = function(){
+      //$rootScope.$emit("Game.Popup",data)
+    }
+
+    // Main Game Loop - that updates ressources.
+    $rootScope.$on("Game.Step",function(e){
+
+      window.document.dispatchEvent(new CustomEvent("Window.Game.Step"))
+
+      $scope.calculateRessource()
+      //Generate Events
+      $scope.generateBubbles()
+
       $scope.$digest()
     })
+
+    $rootScope.$on("Player.Updated",function(e){
+      $scope.$digest()
+    })
+
   }
 ])
 

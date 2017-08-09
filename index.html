@@ -8,7 +8,7 @@
   </head>
   <body
     id="Evotacle"
-    ng-app="Evotacle"
+    ng-app="Evotacle" ng-strict-di
     ng-controller="GameController"
     class="ARC-vertical-flex"
   >
@@ -83,11 +83,18 @@
           </section>
         </section>
         <svg id="Map">
+          <defs>
+            <clipPath id="EventArea">
+              <rect x="0" y="0" width="10" height="10" fill="white" ng-dynamic-styles="x,y,height,width" data-dy-x="1vh" data-dy-y="7vh" data-dy-height="5vh" data-dy-width="{p3|width.baseVal.value}-2vh" ></rect>
+            </clipPath>
+          </defs>
           <rect x="0" y="0" width="150" height="150" fill="hsl(291, 31%, 14%)" ng-dynamic-styles="Y,height,width" data-dy-y="6vh" data-dy-height="{p1|height.baseVal.value}-11vh" data-dy-width="{p1|width.baseVal.value}"></rect>
-          <rect x="0" y="0" width="10" height="10" fill="white" ng-dynamic-styles="x,y,height,width" data-dy-x="1vh" data-dy-y="7vh" data-dy-height="5vh" data-dy-width="{p1|width.baseVal.value}-2vh" ></rect>
-          <text x="300" y="100" font-family="Verdana" font-size="35" text-anchor="middle" ng-dynamic-styles="font-size,y,x" data-dy-font-size="3vh" data-dy-y="10.5vh" data-dy-x="{p1|width.baseVal.value}/2">
-            Tiny Squidlet!
-          </text>
+          <g id="EventTicker" clip-path="url(#EventArea)">
+            <rect x="0" y="0" width="10" height="10" fill="#483613" ng-dynamic-styles="x,y,height,width" data-dy-x="1vh" data-dy-y="7vh" data-dy-height="5vh" data-dy-width="{p2|width.baseVal.value}-2vh" ></rect>
+            <text x="300" y="100" font-family="Verdana" fill="#d58b23" font-size="35" text-anchor="middle" ng-dynamic-styles="font-size,y,x" data-dy-font-size="3vh" data-dy-y="10.5vh" data-dy-x="{p2|width.baseVal.value}/2">
+              Welcome to Evotacle
+            </text>
+          </g>
           <g transform="translate(0 453) scale(0.4) rotate(-90)">
 
           </g>
